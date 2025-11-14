@@ -1,0 +1,33 @@
+{
+  "routes": {
+    "/api/care": {
+      "description": "Placeholder sentiment analysis route (AI integration pending)",
+      "method": "POST",
+      "sample_input": { "text": "I feel tired." }
+    },
+    "/api/carbon": {
+      "description": "Calculate carbon footprint based on travel/energy/diet inputs",
+      "method": "POST",
+      "sample_input": { "travel": 10, "energy": 5, "diet": "veg" }
+    },
+    "/api/water": {
+      "description": "Check water quality based on pH and TDS",
+      "method": "POST",
+      "sample_input": { "ph": 7.0, "tds": 300 }
+    },
+    "/api/fire": {
+      "description": "Fire risk prediction based on temperature/humidity/wind",
+      "method": "POST",
+      "sample_input": { "temp": 32, "humidity": 40, "wind": 10 }
+    },
+    "/api/map": {
+      "description": "Add/Get map pins for SafeRoute & BloomNet",
+      "methods": ["GET", "POST"],
+      "sample_pin": { "type": "hazard", "lat": 19.2, "lng": 72.8, "message": "Road blocked" }
+    },
+    "/api/events": {
+      "description": "Fetch eco events (ReVibe)",
+      "method": "GET"
+    }
+  }
+}
