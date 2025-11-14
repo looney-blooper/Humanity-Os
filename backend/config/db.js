@@ -3,10 +3,10 @@ import mongoose from "mongoose";
 export const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: "gaiamesh"
+        dbName: "humanityos"
     });
-    console.log("MongoDB Connected");
+    console.log("MongoDB connected");
   } catch (error) {
-    console.error("DB Error:", error.message);
+    console.error("MongoDB Error:", error.message);
   }
 };

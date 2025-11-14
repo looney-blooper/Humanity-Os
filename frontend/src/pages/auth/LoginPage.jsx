@@ -1,13 +1,20 @@
 import { Eye, EyeOff } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useAuthStore } from "../../store/useAuthStore";
+import ErrorMessage from "../../components/ErrorMessage";
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const {login} = useAuthStore();
+
     const [formData, setFormData] = useState({
         email: "",
         password: ""
     })
+    const [errors, setErrors] = useState({
+        email: "",
+        password: ""
+    });   
 
     const navigate = useNavigate();
 
@@ -18,8 +25,26 @@ const Login = () => {
         });
     };
 
-    const onSubmit = () =>{
-        console.log(formData)
+    const onSubmit = async () =>{
+        if(formData.email === "" || formData.password === ""){
+            alert("Please fill all the fields");
+            return;
+        }
+        try{
+        const res = await login(formData.email, formData.password);
+        if(res.ok){
+            navigate("/carepage");
+        }
+        else{
+            setErrors({
+                email: res?.error.email,
+                password: res?.error.password
+            });
+
+        }
+        }catch(err){
+            console.error("Login error:", err);
+        }
     }
 
     return (
@@ -35,6 +60,7 @@ const Login = () => {
                             value={formData.email}
                             required />
                     </div>
+                    {errors.email && <ErrorMessage message={errors.email} />}
                     <div className="flex  gap-4 justify-between w-full border-1 border-gray-400/20 rounded-xl items-center px-3">
                         <input type={showPassword ? "text" : "password"} className="w-full outline-0  p-2 " id="" placeholder="Enter Password"
                             name="password"
@@ -45,6 +71,7 @@ const Login = () => {
                             {showPassword ? <EyeOff className="text-white/80 size-5" /> : <Eye className="text-white/80 size-5" />}
                         </button>
                     </div>
+                    {errors.password && <ErrorMessage message={errors.password} />}
                 </div>
 
                 <button className="mt-12 p-2 rounded-lg font-bold tracking-wide text-lg bg-gradient-to-r from-violet-500 to-pink-500 w-full" onClick={onSubmit}>

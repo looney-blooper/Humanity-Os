@@ -6,7 +6,7 @@ import {
   addActivityLog,
   getFarmSuggestions,
 } from "../controllers/farmController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect } from "../middlewares/authmiddlewares.js";
 
 const router = express.Router();
 
