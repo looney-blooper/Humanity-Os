@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getQuestions } from "../../../backend/controllers/careController";
 
 const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -31,7 +32,7 @@ export const useAuthStore = create((set, get) => ({
             if (!res.ok) {
                 return data;
             }
-
+            console.log("🚀 Login successful:", data);
             localStorage.setItem("authToken", data.token);
             set({
                 user: data.user,
@@ -92,10 +93,9 @@ export const useAuthStore = create((set, get) => ({
     checkAuth: async () => {
         const token = localStorage.getItem("authToken");
         if (!token) return { ok: false };
-
-        set({ isCheckingAuth: true });
-
+        
         try {
+            set({ isCheckingAuth: true });
             const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
                 method: "GET",
                 headers: {
@@ -119,8 +119,9 @@ export const useAuthStore = create((set, get) => ({
 
             return { ok: true, user: data };
         } catch (err) {
-            set({ user: null, token: null, isCheckingAuth: false });
-            return { ok: false };
+            set({ user: null, token: null});
+        } finally{
+            set({ isCheckingAuth: false });
         }
     },
 
@@ -163,6 +164,48 @@ export const useAuthStore = create((set, get) => ({
         } catch (err) {
             set({ loading: false, error: err.message });
             return { ok: false, error: err.message };
+        }
+    },
+
+    getQuestions: async () => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/care/questions`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to fetch questions");
+            }
+            return data;
+        } catch (error) {
+            console.error("Error fetching questions:", error);
+            throw error;
+        }
+    },
+
+    submitAnswers: async (answers, file) => {
+        try {
+            const formData = new FormData();
+            formData.append("answers", JSON.stringify(answers));
+            if (file) {
+                formData.append("file", file);
+            }
+            const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to submit answers");
+            }
+            return data;
+        }
+        catch (error) {
+            console.error("Error submitting answers:", error);
+            throw error;
         }
     },
 }));

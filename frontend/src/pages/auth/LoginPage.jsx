@@ -55,14 +55,14 @@ const Login = () => {
                 <p className="mt-2 text-[14px]">We missed you — let's pick up where we left off.</p>
                 <div className="space-y-6 w-full mt-20 ">
                     <div className="flex  gap-4 justify-between w-full border-1 border-gray-400/20 rounded-xl items-center px-3">
-                        <input type="text" className="w-full outline-0  p-2 " id="" placeholder="Enter Email" name="email"
+                        <input type="text" className="w-full outline-0  p-2 " placeholder="Enter Email" name="email"
                             onChange={handleChange}
                             value={formData.email}
                             required />
                     </div>
                     {errors.email && <ErrorMessage message={errors.email} />}
                     <div className="flex  gap-4 justify-between w-full border-1 border-gray-400/20 rounded-xl items-center px-3">
-                        <input type={showPassword ? "text" : "password"} className="w-full outline-0  p-2 " id="" placeholder="Enter Password"
+                        <input type={showPassword ? "text" : "password"} className="w-full outline-0  p-2 " placeholder="Enter Password"
                             name="password"
                             onChange={handleChange}
                             value={formData.password}

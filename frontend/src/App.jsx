@@ -10,31 +10,32 @@ import { useEffect } from 'react'
 
 
 const App = () => {
-    const { isCheckingAuth, authUser, checkAuth } = useAuthStore();
-  useEffect(() => {
+    const { isCheckingAuth, user, checkAuth } = useAuthStore();
 
-    checkAuth();
-  }, [checkAuth])
-  if (isCheckingAuth && !authUser) {
+    useEffect(() => {
+        checkAuth();
+    }, []);
+
+    if (isCheckingAuth && !user) {
+        return (
+            <div className='flex items-center justify-center w-screen h-screen bg-[#121212]'>
+                Loading...
+            </div>
+        );
+    }
+
     return (
-      <div className='flex items-center justify-center w-screen h-screen bg-[#121212]'>
-        Loading...
-      </div>
-    )
-  }
-
-  return (
-    <div className='w-screen'>
-        <Routes>
-          
-          <Route path="/" element={authUser ? <Dashboard/> : <LoginPage/>}/>
-          <Route path="/login" element={<LoginPage/>}/>
-          <Route path="/signup" element={<SignupPage/>}/>
-          <Route path="/dashboard" element={<Dashboard />}/>
-          <Route path="/carepage" element={<CarePage/>}/>
-        </Routes>
-    </div>
-  )
+        <div className='w-screen'>
+            <Routes>
+                <Route path="/" element={user ? <Dashboard/> : <LoginPage/>} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/carepage" element={<CarePage />} />
+            </Routes>
+        </div>
+    );
 }
+  
 
 export default App
