@@ -52,7 +52,7 @@ Example (do not reuse):
 
 # ---------------- LLM SETUP ----------------
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
+    model="gemini-2.5-flash",
     temperature=0.5
 )
 
