@@ -1,5 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
-import {getCoordinates} from "../utils/getCoordinates.js";
+
+// Mock getCoordinates for demo - replace with your actual implementation
+const getCoordinates = async () => {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve([position.coords.longitude, position.coords.latitude]),
+        (error) => reject(error)
+      );
+    } else {
+      reject(new Error('Geolocation not supported'));
+    }
+  });
+};
 
 export default function WaterQualityFrontendWrapper() {
   const mapElRef = useRef(null);
@@ -26,36 +39,53 @@ export default function WaterQualityFrontendWrapper() {
     { name: 'Spring C', lat: 40.6928, lon: -73.9660, distance_km: 2.4, tests: { Nitrate: 1.5, 'E. coli': 0 } }
   ];
 
-  // Load sources from localStorage on mount
+  // Get user location first, then load sources and recalculate distances
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSources(parsed);
-        }
-      }
-      const coordsPromise = getCoordinates();
-      coordsPromise.then(([lng, lat]) => {
+    async function init() {
+      let userLat = 40.7128;
+      let userLon = -74.0060;
+      
+      // Get user's current location FIRST
+      try {
+        const [lng, lat] = await getCoordinates();
+        userLat = lat;
+        userLon = lng;
         setLatInput(String(lat));
         setLonInput(String(lng));
-      }).catch((e) => {
-        console.warn('Geolocation failed', e);
-      });
-    } catch (e) {
-      console.warn('Failed to load from localStorage', e);
+      } catch (e) {
+        console.warn('Geolocation failed, using default location', e);
+      }
+
+      // Then load sources from localStorage and recalculate distances
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Recalculate all distances based on current user location
+            const updatedSources = parsed.map(s => ({
+              ...s,
+              distance_km: calculateDistance(userLat, userLon, s.lat, s.lon)
+            }));
+            setSources(updatedSources);
+            
+            // Save updated distances back to localStorage
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSources));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load from localStorage', e);
+      }
     }
+    init();
   }, []);
 
   // Save sources to localStorage whenever they change
   useEffect(() => {
-    if (sources.length > 0) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
-      } catch (e) {
-        console.warn('Failed to save to localStorage', e);
-      }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
+    } catch (e) {
+      console.warn('Failed to save to localStorage', e);
     }
   }, [sources]);
 
@@ -93,13 +123,17 @@ export default function WaterQualityFrontendWrapper() {
     return () => { cancelled = true; };
   }, []);
 
+  // Initialize map when Leaflet loads AND latInput/lonInput are set
   useEffect(() => {
     const L = leafletRef.current;
     if (!L || !mapElRef.current) return;
     if (mapRef.current) return;
 
+    const centerLat = parseFloat(latInput) || 40.7128;
+    const centerLon = parseFloat(lonInput) || -74.0060;
+
     mapRef.current = L.map(mapElRef.current, {
-      center: [parseFloat(latInput) || 40.7128, parseFloat(lonInput) || -74.0060],
+      center: [centerLat, centerLon],
       zoom: 13,
       preferCanvas: true
     });
@@ -110,16 +144,22 @@ export default function WaterQualityFrontendWrapper() {
       maxZoom: 19
     }).addTo(mapRef.current);
 
-    userMarkerRef.current = L.marker([parseFloat(latInput) || 40.7128, parseFloat(lonInput) || -74.0060]).addTo(mapRef.current).bindPopup('Your location');
-
-    mapRef.current.on('click', (e) => {
-      if (pinMode) {
-        setNewSource({ name: '', lat: e.latlng.lat, lon: e.latlng.lng, tests: {} });
-        setShowAddModal(true);
-        setPinMode(false);
-        setStatus('');
-      }
+    // Create custom red icon for user location
+    const redIcon = L.icon({
+      iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+          <path fill="#ef4444" stroke="#fff" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 18 9 18s9-11.25 9-18c0-4.97-4.03-9-9-9z"/>
+          <circle cx="12" cy="9" r="4" fill="#fff"/>
+        </svg>
+      `),
+      iconSize: [24, 36],
+      iconAnchor: [12, 36],
+      popupAnchor: [0, -36]
     });
+
+    userMarkerRef.current = L.marker([centerLat, centerLon], {
+      icon: redIcon
+    }).addTo(mapRef.current).bindPopup('Your location');
 
     // Render existing sources if any
     if (sources.length > 0) {
@@ -133,12 +173,32 @@ export default function WaterQualityFrontendWrapper() {
       try { mapRef.current && mapRef.current.remove(); } catch (e) {}
       mapRef.current = null;
     };
-  }, [leafletRef.current]);
+  }, [leafletRef.current, latInput, lonInput]);
 
   useEffect(() => {
-    if (mapRef.current && mapElRef.current) {
+    if (!mapRef.current) return;
+    
+    const handleMapClick = (e) => {
+      if (pinMode) {
+        setNewSource({ name: '', lat: e.latlng.lat, lon: e.latlng.lng, tests: {} });
+        setShowAddModal(true);
+        setPinMode(false);
+        setStatus('');
+      }
+    };
+
+    mapRef.current.on('click', handleMapClick);
+
+    // Update cursor style
+    if (mapElRef.current) {
       mapElRef.current.style.cursor = pinMode ? 'crosshair' : '';
     }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleMapClick);
+      }
+    };
   }, [pinMode]);
 
   function parseNum(v) {
@@ -168,9 +228,22 @@ export default function WaterQualityFrontendWrapper() {
     (markersRef.current || []).forEach(m => { try { mapRef.current.removeLayer(m); } catch (e) {} });
     markersRef.current = [];
 
+    // Create custom blue icon for water sources
+    const blueIcon = L.icon({
+      iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+          <path fill="#3b82f6" stroke="#fff" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 18 9 18s9-11.25 9-18c0-4.97-4.03-9-9-9z"/>
+          <circle cx="12" cy="9" r="4" fill="#fff"/>
+        </svg>
+      `),
+      iconSize: [24, 36],
+      iconAnchor: [12, 36],
+      popupAnchor: [0, -36]
+    });
+
     for (const s of list) {
       try {
-        const m = L.marker([s.lat, s.lon]).addTo(mapRef.current).bindPopup(`<strong>${escapeHtml(s.name)}</strong><br>${(s.distance_km||0).toFixed(2)} km`);
+        const m = L.marker([s.lat, s.lon], { icon: blueIcon }).addTo(mapRef.current).bindPopup(`<strong>${escapeHtml(s.name)}</strong><br>${(s.distance_km||0).toFixed(2)} km`);
         markersRef.current.push(m);
       } catch (e) { console.warn('marker add failed', e); }
     }
@@ -221,8 +294,24 @@ export default function WaterQualityFrontendWrapper() {
     const latN = parseNum(latInput);
     const lonN = parseNum(lonInput);
     if (latN === null || lonN === null) { setStatus('invalid coords'); setLoading(false); return; }
+    const L = leafletRef.current;
     if (userMarkerRef.current && userMarkerRef.current.setLatLng) {
-      try { userMarkerRef.current.setLatLng([latN, lonN]); } catch (e) {}
+      try { 
+        userMarkerRef.current.setLatLng([latN, lonN]);
+        // Update the red icon
+        const redIcon = L.icon({
+          iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+              <path fill="#ef4444" stroke="#fff" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 18 9 18s9-11.25 9-18c0-4.97-4.03-9-9-9z"/>
+              <circle cx="12" cy="9" r="4" fill="#fff"/>
+            </svg>
+          `),
+          iconSize: [24, 36],
+          iconAnchor: [12, 36],
+          popupAnchor: [0, -36]
+        });
+        userMarkerRef.current.setIcon(redIcon);
+      } catch (e) {}
     }
     if (mapRef.current && mapRef.current.setView) { try { mapRef.current.setView([latN, lonN], 13); } catch (e) {} }
 
@@ -242,7 +331,25 @@ export default function WaterQualityFrontendWrapper() {
     navigator.geolocation.getCurrentPosition((p) => {
       const latN = p.coords.latitude; const lonN = p.coords.longitude;
       setLatInput(String(latN)); setLonInput(String(lonN));
-      if (userMarkerRef.current && userMarkerRef.current.setLatLng) try { userMarkerRef.current.setLatLng([latN, lonN]); } catch (e) {}
+      const L = leafletRef.current;
+      if (userMarkerRef.current && userMarkerRef.current.setLatLng) {
+        try { 
+          userMarkerRef.current.setLatLng([latN, lonN]);
+          // Update the red icon
+          const redIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+                <path fill="#ef4444" stroke="#fff" stroke-width="2" d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 18 9 18s9-11.25 9-18c0-4.97-4.03-9-9-9z"/>
+                <circle cx="12" cy="9" r="4" fill="#fff"/>
+              </svg>
+            `),
+            iconSize: [24, 36],
+            iconAnchor: [12, 36],
+            popupAnchor: [0, -36]
+          });
+          userMarkerRef.current.setIcon(redIcon);
+        } catch (e) {}
+      }
       if (mapRef.current && mapRef.current.setView) try { mapRef.current.setView([latN, lonN], 13); } catch (e) {}
       doSearch();
     }, (err) => { setStatus('geolocation failed'); });
