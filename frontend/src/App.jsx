@@ -8,6 +8,8 @@ import CarePage from './pages/CarePage';
 import { useAuthStore } from './store/useAuthStore';
 import { Toaster } from 'react-hot-toast';
 import CarbonFootprintTracker from './pages/CarbonFootprint';
+import WaterQualityFrontendWrapper from './pages/WaterMap';
+
 
 
 
@@ -43,6 +45,7 @@ const App = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/carepage" element={<CarePage />} />
                 <Route path="/carbonfootprint" element={<CarbonFootprintTracker />} />
+                <Route path="/watermap" element={<WaterQualityFrontendWrapper />} />
             </Routes>
     </div>
   );
