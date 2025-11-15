@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import {getCoordinates} from "../utils/getCoordinates.js";
 
 export default function WaterQualityFrontendWrapper() {
   const mapElRef = useRef(null);
@@ -35,6 +36,13 @@ export default function WaterQualityFrontendWrapper() {
           setSources(parsed);
         }
       }
+      const coordsPromise = getCoordinates();
+      coordsPromise.then(([lng, lat]) => {
+        setLatInput(String(lat));
+        setLonInput(String(lng));
+      }).catch((e) => {
+        console.warn('Geolocation failed', e);
+      });
     } catch (e) {
       console.warn('Failed to load from localStorage', e);
     }
