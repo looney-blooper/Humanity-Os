@@ -168,22 +168,22 @@ export default function CarePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+    <div className="min-h-screen bg-[#0a0a0a] py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <div className="bg-[#0b0b0b] rounded-2xl shadow-lg p-6 mb-6">
+          <h1 className="text-3xl font-bold mb-2">
             Emotional Assessment
           </h1>
-          <p className="text-gray-600">
+          <p className="">
             Please answer all questions honestly and capture a clear photo of yourself.
           </p>
         </div>
 
         {/* Questions Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+        <div className="bg-[#0b0b0b] rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold  mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
               1
             </div>
             Assessment Questions
@@ -192,24 +192,24 @@ export default function CarePage() {
           <div className="space-y-4">
             {questionsLoading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
               </div>
             ) : questions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No questions available.</p>
+              <p className=" text-center py-8">No questions available.</p>
             ) : (
               questions.map((q, index) => (
                 <div
                   key={index}
-                  className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-xl border border-indigo-100 transition-all hover:shadow-md"
+                  className="bg-[#0b0b0b] p-5 rounded-xl border border-white/20 transition-all hover:shadow-md"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                    <span className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
                       {index + 1}
                     </span>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800 mb-3">{q}</p>
+                      <p className="font-medium  mb-3">{q}</p>
                       <textarea
-                        className="text-black w-full border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none resize-none"
+                        className=" w-full border-2 border-white/10 p-3 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none resize-none"
                         placeholder="Type your answer here..."
                         rows="3"
                         onChange={(e) => handleInput(index, e.target.value)}
@@ -224,9 +224,9 @@ export default function CarePage() {
         </div>
 
         {/* Camera Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+        <div className="bg-[#0b0b0b] rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold  mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
               2
             </div>
             Capture Your Photo
@@ -235,14 +235,14 @@ export default function CarePage() {
           {!capturedImage && !cameraActive && (
             <div className="text-center py-12">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-4">
-                <Camera className="w-10 h-10 text-indigo-600" />
+                <Camera className="w-10 h-10 text-purple-600" />
               </div>
-              <p className="text-gray-600 mb-4">
+              <p className=" mb-4">
                 We need a clear photo of your face for emotional analysis
               </p>
               <button
                 onClick={startCamera}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg inline-flex items-center gap-2"
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md hover:shadow-lg inline-flex items-center gap-2"
               >
                 <Camera className="w-5 h-5" />
                 Open Camera
@@ -310,9 +310,9 @@ export default function CarePage() {
         </div>
 
         {/* Submit Button */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="bg-[#0b0b0b] rounded-2xl shadow-lg p-6 mb-6">
           {(!allAnswered || !capturedImage) && (
-            <div className="flex items-start gap-3 text-amber-700 bg-amber-50 p-4 rounded-lg mb-4">
+            <div className="flex items-start gap-3 text-amber-700 bg-white/10 p-4 rounded-lg mb-4">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium mb-1">Before submitting:</p>
@@ -327,10 +327,10 @@ export default function CarePage() {
           <button
             onClick={handleSubmit}
             disabled={loading || !allAnswered || !capturedImage}
-            className={`w-full px-6 py-4 rounded-xl text-white font-semibold text-lg transition-all shadow-lg ${
+            className={`w-full px-6 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold text-lg transition-all shadow-lg ${
               loading || !allAnswered || !capturedImage
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl"
+                ? "opacity-60 cursor-not-allowed"
+                : " hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl"
             }`}
           >
             {loading ? (

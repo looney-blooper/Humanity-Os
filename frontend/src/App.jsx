@@ -31,13 +31,12 @@ const App = () => {
 
   const noNavbarRoutes = ['/login', '/signup'];
   const showNavbar = !noNavbarRoutes.includes(location.pathname);
-
   return (
     <div className='w-screen'>
       <Toaster position="top-right" reverseOrder={false}/>
       {showNavbar && <Navbar />}
       <Routes>
-                <Route path="/" element={user ? <Dashboard/> : <LoginPage/>} />
+                <Route path="/" element={user ? <Dashboard/> : navigate("/login")} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
