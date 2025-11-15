@@ -15,7 +15,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
           <a href="/carepage">Self Care</a>
           <a href="/carbonfootprint">Carbon Footprint</a>
-          <a href="#community">Community</a>
+          <a href="/watermap">Water</a>
           <a href="#contact">Contact</a>
         </div>
 
