@@ -1,0 +1,13 @@
+langchain
+langgraph
+langchain-google-genai
+dotenv
+transformers
+numpy
+opencv-python
+pillow
+requests
+torch
+huggingface_hub[hf_xet]
+fastapi
+uvicorn[standard]
