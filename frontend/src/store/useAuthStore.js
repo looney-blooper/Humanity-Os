@@ -104,22 +104,21 @@ export const useAuthStore = create((set, get) => ({
             });
 
             const data = await res.json();
-
             if (!res.ok) {
-                set({ user: null, token: null, isCheckingAuth: false });
+                set({isCheckingAuth: false });
                 localStorage.removeItem("authToken");
                 return { ok: false };
             }
 
             set({
-                user: data, // backend returns user object directly
-                token,
+                user: data, 
+                token: token,
                 isCheckingAuth: false,
             });
 
             return { ok: true, user: data };
         } catch (err) {
-            set({ user: null, token: null});
+            set({ token: null});
         } finally{
             set({ isCheckingAuth: false });
         }
@@ -185,27 +184,27 @@ export const useAuthStore = create((set, get) => ({
             throw error;
         }
     },
+    submitAnswers: async (QAs, file) => {
+  try {
+    const formData = new FormData();
+    
+    formData.append("QAs", JSON.stringify(QAs));
 
-    submitAnswers: async (answers, file) => {
-        try {
-            const formData = new FormData();
-            formData.append("answers", JSON.stringify(answers));
-            if (file) {
-                formData.append("file", file);
-            }
-            const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
-                method: "POST",
-                body: formData,
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || "Failed to submit answers");
-            }
-            return data;
-        }
-        catch (error) {
-            console.error("Error submitting answers:", error);
-            throw error;
-        }
-    },
+    if (file) formData.append("file", file);
+
+    const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to submit answers");
+
+    return data;
+  } catch (err) {
+    console.error("Error submitting answers:", err);
+    throw err;
+  }
+},
+
 }));

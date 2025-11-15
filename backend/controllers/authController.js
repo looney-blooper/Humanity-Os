@@ -70,11 +70,12 @@ export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ error: "User not found" });
-    return res.json(user);
+    return res.json(user); // ✔ IMPORTANT
   } catch (error) {
     return res.status(500).json({ error: "Could not fetch profile" });
   }
 };
+
 
 // ------------------------------
 // PROFILE UPDATE (PUT)

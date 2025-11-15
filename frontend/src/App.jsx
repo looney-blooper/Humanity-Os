@@ -8,6 +8,7 @@ import CarePage from './pages/CarePage';
 import { useAuthStore } from './store/useAuthStore';
 import { Toaster } from 'react-hot-toast';
 import CarbonFootprintTracker from './pages/CarbonFootprint';
+import ProtectedRoute from './components/auth/ProtectedRoutes';
 import WaterQualityFrontendWrapper from './pages/WaterMap';
 
 
