@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getQuestions } from "../../../backend/controllers/careController";
+import { addWaterSource } from "../../../backend/controllers/waterController";
 
 const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -204,6 +205,53 @@ export const useAuthStore = create((set, get) => ({
         } catch (err) {
             console.error("Error submitting answers:", err);
             throw err;
+        }
+    },
+
+    addWaterSource: async (sourceData) => {
+        const { token } = get();
+        set({ loading: true, error: null });
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/water/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(sourceData),
+            });
+            const data = await res.json();
+            set({ loading: false });
+            if (!res.ok) {
+                return { ok: false, error: data.message || "Failed to add water source" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            set({ loading: false, error: err.message });
+            return { ok: false, error: err.message };
+        }
+    },
+
+    getWaterSources: async () => {
+        const { token } = get();
+        set({ loading: true, error: null });
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/water/sources`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const data = await res.json();
+            set({ loading: false });
+            if (!res.ok) {
+                return { ok: false, error: data.message || "Failed to fetch water sources" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            set({ loading: false, error: err.message });
+            return { ok: false, error: err.message };
         }
     },
 
