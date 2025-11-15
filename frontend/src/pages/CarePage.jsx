@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 
@@ -8,11 +8,17 @@ export default function CarePage() {
 
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [cameraActive, setCameraActive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   const navigate = useNavigate();
+
+  // CAMERA REFS
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
   // Fetch questions on mount
   useEffect(() => {
     async function load() {
@@ -28,21 +34,68 @@ export default function CarePage() {
     load();
   }, []);
 
-  const handleInput = (qid, value) => {
-    setAnswers((prev) => ({ ...prev, [qid]: value }));
+  // Start camera
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+      videoRef.current.srcObject = stream;
+      setCameraActive(true);
+    } catch (err) {
+      console.error("Camera access denied:", err);
+      alert("Cannot access camera. Please allow permissions.");
+    }
   };
 
+  // Capture image
+  const captureImage = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    const base64 = canvas.toDataURL("image/jpeg").split(",")[1];
+    setCapturedImage(base64);
+
+    // stop camera
+    const stream = video.srcObject;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+    }
+    setCameraActive(false);
+  };
+
+  // Handle answers
+  const handleInput = (index, value) => {
+    setAnswers((prev) => ({ ...prev, [index]: value }));
+  };
+
+  // Check all questions answered
+  const allAnswered =
+    questions.length > 0 &&
+    questions.every((_, i) => answers[i] && answers[i].trim() !== "");
+
   const handleSubmit = async () => {
+    if (!capturedImage) {
+      return alert("Please capture your photo before submitting.");
+    }
+    if (!allAnswered) {
+      return alert("Please answer all questions before submitting.");
+    }
+
     setLoading(true);
-    setResult(null);
 
     try {
-      const formattedAnswers = Object.keys(answers).map((qid) => ({
-        question_id: qid,
-        answer: answers[qid],
+      const QAs = questions.map((q, index) => ({
+        question: q,
+        answer: answers[index] || "",
       }));
 
-      const data = await submitAnswers(formattedAnswers, file);
+      const data = await submitAnswers(QAs, capturedImage); // ⚠ send base64 string directly
       setResult(data);
     } catch (e) {
       console.error("Submit error:", e);
@@ -60,36 +113,65 @@ export default function CarePage() {
         {questions.length === 0 && <p>Loading questions…</p>}
 
         {questions.map((q, index) => (
-          <div key={q.id} className="p-4 border rounded-lg">
+          <div key={index} className="p-4 border rounded-lg">
             <p className="font-semibold mb-2">
-              {index + 1}. {q.question}
+              {index + 1}. {q}
             </p>
 
             <input
               type="text"
               className="w-full border p-2 rounded"
               placeholder="Type your answer..."
-              onChange={(e) => handleInput(q.id, e.target.value)}
+              onChange={(e) => handleInput(index, e.target.value)}
             />
           </div>
         ))}
       </div>
 
-      {/* IMAGE UPLOAD */}
-      <div className="mt-4">
-        <label className="block font-semibold mb-1">Upload a Photo (optional):</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
+      {/* CAMERA */}
+      <div className="mt-6">
+        {!capturedImage && !cameraActive && (
+          <button
+            onClick={startCamera}
+            className="px-4 py-2 bg-green-600 text-white rounded"
+          >
+            Open Camera
+          </button>
+        )}
+
+        {cameraActive && (
+          <div className="mt-4">
+            <video ref={videoRef} autoPlay className="w-full rounded border" />
+            <button
+              onClick={captureImage}
+              className="mt-2 w-full px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              Capture Photo
+            </button>
+          </div>
+        )}
+
+        {capturedImage && (
+          <div className="mt-4">
+            <h3 className="font-semibold mb-2">Captured Image:</h3>
+            <img
+              src={`data:image/jpeg;base64,${capturedImage}`}
+              alt="Captured"
+              className="w-full rounded border"
+            />
+          </div>
+        )}
       </div>
 
       {/* SUBMIT BUTTON */}
       <button
         onClick={handleSubmit}
-        disabled={loading}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+        disabled={loading || !allAnswered || !capturedImage}
+        className={`mt-6 px-4 py-2 rounded text-white ${
+          loading || !allAnswered || !capturedImage
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700"
+        }`}
       >
         {loading ? "Analyzing..." : "Submit"}
       </button>
@@ -99,29 +181,15 @@ export default function CarePage() {
         <div className="mt-6 p-4 border rounded-lg bg-gray-50">
           <h2 className="text-xl font-semibold mb-2">Emotional Assessment</h2>
 
-          {result.summary && (
-            <p className="text-gray-700 mb-2">
-              <strong>Summary:</strong> {result.summary}
-            </p>
-          )}
-
-          {result.emotion && (
-            <p className="text-gray-700 mb-1">
-              <strong>Primary Emotion:</strong> {result.emotion}
-            </p>
-          )}
-
-          {result.score && (
-            <p className="text-gray-700 mb-1">
-              <strong>Emotional Score:</strong> {result.score}/100
-            </p>
-          )}
-
           <pre className="text-xs text-gray-500 mt-4">
             Raw Data: {JSON.stringify(result, null, 2)}
           </pre>
         </div>
       )}
+
+      {/* Hidden canvas for capturing */}
+      <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
     </div>
   );
 }
+  
