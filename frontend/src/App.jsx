@@ -10,9 +10,7 @@ import { Toaster } from 'react-hot-toast';
 import CarbonFootprintTracker from './pages/CarbonFootprint';
 import ProtectedRoute from './components/auth/ProtectedRoutes';
 import WaterQualityFrontendWrapper from './pages/WaterMap';
-
-
-
+import WaterMapPage from './pages/WaterMapPage'  // Add this import
 
 const App = () => {
   const { isCheckingAuth, user, checkAuth } = useAuthStore();

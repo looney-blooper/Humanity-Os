@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 import { Camera, CheckCircle, AlertCircle } from "lucide-react";
+import ResultDisplay from "../components/ResultDisplay"; // or wherever you save the component
 
 export default function CarePage() {
   const getQuestions = useAuthStore((state) => state.getQuestions);
@@ -14,6 +15,7 @@ export default function CarePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [stream, setStream] = useState(null);
 
   const navigate = useNavigate();
 
@@ -41,60 +43,86 @@ export default function CarePage() {
   // Cleanup camera on unmount
   useEffect(() => {
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject;
+      if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [stream]);
 
-  // Start camera - FIXED
+  // Start camera - FIXED FOR PREVIEW
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
+      console.log("Requesting camera access...");
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
       });
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraActive(true);
-        
-        // Ensure video plays
-        try {
-          await videoRef.current.play();
-        } catch (playErr) {
-          console.error("Error playing video:", playErr);
+      console.log("Camera access granted, stream:", mediaStream);
+      
+      setStream(mediaStream);
+      setCameraActive(true);
+      
+      // Small delay to ensure state updates
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+          });
         }
-      }
+      }, 100);
+      
     } catch (err) {
-      console.error("Camera access denied:", err);
-      alert("Cannot access camera. Please allow camera permissions in your browser settings.");
+      console.error("Camera error:", err);
+      alert(`Camera error: ${err.message}. Please allow camera permissions.`);
     }
   };
 
-  // Capture image
+  // Stop camera
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        track.stop();
+        console.log("Track stopped:", track);
+      });
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  // Capture image - REWRITTEN
   const captureImage = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("Video or canvas ref not available");
+      return;
+    }
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
+    console.log("Video dimensions:", video.videoWidth, video.videoHeight);
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      alert("Video not ready. Please wait a moment and try again.");
+      return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const base64 = canvas.toDataURL("image/jpeg").split(",")[1];
+    const base64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
+    console.log("Image captured, base64 length:", base64.length);
+    
     setCapturedImage(base64);
-
-    // stop camera
-    const stream = video.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-    }
-    setCameraActive(false);
+    stopCamera();
   };
 
   // Retake photo
@@ -181,7 +209,7 @@ export default function CarePage() {
                     <div className="flex-1">
                       <p className="font-medium text-gray-800 mb-3">{q}</p>
                       <textarea
-                        className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none resize-none"
+                        className="text-black w-full border-2 border-gray-200 p-3 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none resize-none"
                         placeholder="Type your answer here..."
                         rows="3"
                         onChange={(e) => handleInput(index, e.target.value)}
@@ -214,7 +242,7 @@ export default function CarePage() {
               </p>
               <button
                 onClick={startCamera}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg inline-flex items-center gap-2"
               >
                 <Camera className="w-5 h-5" />
                 Open Camera
@@ -224,23 +252,35 @@ export default function CarePage() {
 
           {cameraActive && (
             <div className="space-y-4">
-              <div className="relative rounded-xl overflow-hidden border-4 border-indigo-200">
+              <div className="relative rounded-xl overflow-hidden border-4 border-indigo-200 bg-gray-900" style={{ minHeight: "400px" }}>
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full"
-                  style={{ maxHeight: "500px", objectFit: "cover" }}
+                  style={{ 
+                    width: "100%", 
+                    height: "auto",
+                    minHeight: "400px",
+                    objectFit: "cover"
+                  }}
                 />
               </div>
-              <button
-                onClick={captureImage}
-                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-              >
-                <Camera className="w-5 h-5" />
-                Capture Photo
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={captureImage}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Camera className="w-5 h-5" />
+                  Capture Photo
+                </button>
+                <button
+                  onClick={stopCamera}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
@@ -306,27 +346,7 @@ export default function CarePage() {
 
         {/* Result Section */}
         {result && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-7 h-7 text-green-600" />
-              Assessment Complete
-            </h2>
-
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-              <p className="text-gray-700 mb-4">
-                Your emotional assessment has been successfully submitted and analyzed.
-              </p>
-              
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-                  View raw data
-                </summary>
-                <pre className="text-xs text-gray-600 mt-3 p-4 bg-white rounded-lg overflow-auto">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              </details>
-            </div>
-          </div>
+          <ResultDisplay result={result} />
         )}
 
         {/* Hidden canvas for capturing */}
