@@ -104,7 +104,7 @@ export default function Dashboard() {
       {/* Tasks  */}
       <div className="lg:w-2/3 h-full flex xl:flex-row flex-col gap-10">
 
-        <motion.div initial={{opacity:0}} animate={{x:0 , y:0 , opacity:1 }} transition={{duration:0.6}} className="space-y-6 space-x-6 xl:flex-1/2 ">
+        <motion.div initial={{opacity:0}} whileInView={{x:0 , y:0 , opacity:1 }} transition={{duration:0.6}} className="space-y-6 space-x-6 xl:flex-1/2 ">
           {/* Meditaation  */}
           <div className="relative w-full rounded-lg p-4 border-1 space-y-3 border-white/10 bg-[#0b0b0b]">
             {getLocalAttribute('careDashboard', 'meditation') && <div className="absolute right-5 p-1 rounded-full bg-green-500">
@@ -181,7 +181,7 @@ export default function Dashboard() {
 
 
         </motion.div>
-        <div className="xl:flex-1/2 w-full  border-1  rounded-lg p-4 border-white/10 bg-[#0b0b0b] relative">
+        <motion.div initial={{opacity:0}} whileInView={{x:0 , y:0 , opacity:1 }} transition={{duration:0.6 , delay:0.2}}  className="xl:flex-1/2 w-full  border-1  rounded-lg p-4 border-white/10 bg-[#0b0b0b] relative">
           {allCompleted && (
             <div className="absolute right-2 top-2 size-6 flex items-center justify-center rounded-full bg-green-500">
               <Check className="size-4" />
@@ -203,7 +203,7 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full"></div>
-        </div>
+        </motion.div>
 
 
 
@@ -211,7 +211,7 @@ export default function Dashboard() {
       </div>
 
       {/* Progress */}
-      <div className="w-full h-fit lg:w-1/3 border-1 rounded-lg p-4 border-white/10 bg-[#0b0b0b]  top-0 z-50 sticky">
+      <motion.div initial={{opacity:0}} whileInView={{x:0 , y:0 , opacity:1 }} transition={{duration:0.6 , delay:0.4}} className="w-full h-fit lg:w-1/3 border-1 rounded-lg p-4 border-white/10 bg-[#0b0b0b]  top-0 z-50 sticky">
         <h2 className="text-xl font-bold">Track Progress</h2>
 
         {/* Tasks  progress */}
@@ -271,7 +271,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-      </div>
+      </motion.div>
 
 
 
