@@ -11,7 +11,6 @@ app.use(express.json());
 // ROUTES
 import careRoutes from "./routes/care.js";
 import carbonRoutes from "./routes/carbon.js";
-import waterRoutes from "./routes/water.js";
 import fireRoutes from "./routes/fire.js";
 import mapRoutes from "./routes/map.js";
 import eventRoutes from "./routes/events.js";
@@ -32,7 +31,6 @@ app.use(cors({
 }));
 app.use("/api/care", careRoutes);
 app.use("/api/carbon", carbonRoutes);
-app.use("/api/water", waterRoutes);
 app.use("/api/fire", fireRoutes);
 app.use("/api/map", mapRoutes);
 app.use("/api/events", eventRoutes);
