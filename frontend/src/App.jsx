@@ -5,8 +5,7 @@ import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import Dashboard from './pages/auth/Dashboard'
 import CarePage from './pages/CarePage'
-
-
+import WaterMapPage from './pages/WaterMapPage'  // Add this import
 
 const App = () => {
   return (
@@ -16,6 +15,7 @@ const App = () => {
           <Route path="/signup" element={<SignupPage/>}/>
           <Route path="/dashboard" element={<Dashboard />}/>
           <Route path="/carepage" element={<CarePage/>}/>
+          <Route path="/watermap" element={<WaterMapPage/>}/>  {/* Add this route */}
         </Routes>
     </div>
   )
