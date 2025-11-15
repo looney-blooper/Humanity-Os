@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import ErrorMessage from "../../components/ErrorMessage";
+import toast from "react-hot-toast";
 const SignupPage = () => {
     const {signup} = useAuthStore();
     const [errors, setErrors] = useState({
@@ -31,7 +32,7 @@ const SignupPage = () => {
 
     const onSubmit = async () =>{
         if(formData.name === "" || formData.email === "" || formData.password === ""){
-            alert("Please fill all the fields");
+            toast.error("Please fill all the fields");
             return;
         }
 
@@ -69,14 +70,15 @@ const SignupPage = () => {
         const res = await signup(formData.name, formData.email, formData.password);
         console.log("response: ",res);
         if(res.ok){
-            alert("Signup successful! Please login.");
+            toast.success("Signup successful! Please login.");
             navigate("/login");
         }
         else{
-            setErrors({
-                email: res?.error.email,
-                password: res?.error.password
-            });
+            if (res?.error.email)
+                toast.error(res?.error.email)
+            if (res?.error.password)
+                toast.error(res?.error.password)
+            
         }
     }
 
@@ -103,9 +105,6 @@ const SignupPage = () => {
                             value={formData.email}
                             required />
                     </div>
-                    {
-                        errors.email && <ErrorMessage message={errors.email} className="mt-1 ml-2 text-red-500 text-sm"/>
-                    }
 
                     {/* Password  */}
                     <div className="flex  gap-4 justify-between w-full border-1 border-gray-400/20 rounded-xl items-center px-3">
@@ -118,9 +117,7 @@ const SignupPage = () => {
                             {showPassword ? <EyeOff className="text-white/80 size-5" /> : <Eye className="text-white/80 size-5" />}
                         </button>
                     </div>
-                    {
-                        errors.password && <ErrorMessage message={errors.password} className="mt-1 ml-2 text-red-500 text-sm"/>
-                    }
+                    
 
                     {/* Confirm Password  */}
                     <div className="flex  gap-4 justify-between w-full border-1 border-gray-400/20 rounded-xl items-center px-3">
@@ -130,9 +127,7 @@ const SignupPage = () => {
                             value={formData.confirmPassword}
                             required />
                     </div>
-                    {
-                        errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} className="mt-1 ml-2 text-red-500 text-sm"/>
-                    }
+                    
                 </div>
 
                 <button className="mt-12 p-2 rounded-lg font-bold tracking-wide text-lg bg-gradient-to-r from-violet-500 to-pink-500 w-full" onClick={onSubmit}>
