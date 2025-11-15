@@ -11,7 +11,6 @@ import CarbonFootprintTracker from './pages/CarbonFootprint';
 import ProtectedRoute from './components/auth/ProtectedRoutes';
 import WaterQualityFrontendWrapper from './pages/WaterMap';
 
-
 const App = () => {
   const { isCheckingAuth, user, checkAuth } = useAuthStore();
   const location = useLocation();

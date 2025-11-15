@@ -26,7 +26,7 @@ export const useAuthStore = create((set, get) => ({
             });
 
             // 👇 Important: DO NOT throw — handle 400 silently
-            const data = await res.json(); 
+            const data = await res.json();
             data.ok = res.ok;
 
             if (!res.ok) {
@@ -93,7 +93,7 @@ export const useAuthStore = create((set, get) => ({
     checkAuth: async () => {
         const token = localStorage.getItem("authToken");
         if (!token) return { ok: false };
-        
+
         try {
             set({ isCheckingAuth: true });
             const res = await fetch(`${BACKEND_URL}/api/auth/profile`, {
@@ -105,21 +105,21 @@ export const useAuthStore = create((set, get) => ({
 
             const data = await res.json();
             if (!res.ok) {
-                set({isCheckingAuth: false });
+                set({ isCheckingAuth: false });
                 localStorage.removeItem("authToken");
                 return { ok: false };
             }
 
             set({
-                user: data, 
+                user: data,
                 token: token,
                 isCheckingAuth: false,
             });
 
             return { ok: true, user: data };
         } catch (err) {
-            set({ token: null});
-        } finally{
+            set({ token: null });
+        } finally {
             set({ isCheckingAuth: false });
         }
     },
@@ -184,27 +184,27 @@ export const useAuthStore = create((set, get) => ({
             throw error;
         }
     },
-    submitAnswers: async (QAs, file) => {
-  try {
-    const formData = new FormData();
-    
-    formData.append("QAs", JSON.stringify(QAs));
+    submitAnswers: async (QAs, capturedImage) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    QAs: QAs,  // Send as array, not stringified
+                    image: capturedImage || null,
+                }),
+            });
 
-    if (file) formData.append("file", file);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to submit answers");
 
-    const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to submit answers");
-
-    return data;
-  } catch (err) {
-    console.error("Error submitting answers:", err);
-    throw err;
-  }
-},
+            return data;
+        } catch (err) {
+            console.error("Error submitting answers:", err);
+            throw err;
+        }
+    },
 
 }));

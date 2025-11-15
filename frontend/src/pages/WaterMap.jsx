@@ -14,11 +14,42 @@ export default function WaterQualityFrontendWrapper() {
   const [sources, setSources] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pinMode, setPinMode] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSource, setNewSource] = useState({ name: '', lat: 0, lon: 0, tests: {} });
+
+  const STORAGE_KEY = 'waterQualitySources';
 
   const demoSources = [
-    { name: 'Community Well A', lat: 40.7428, lon: -73.9860, distance_km: 3.1, tests: { Nitrate: 3.0, Lead: 0 } },
+    { name: 'Community Well A', lat: 29.7428, lon: 74.9860, distance_km: 3.1, tests: { Nitrate: 3.0, Lead: 0 } },
     { name: 'Spring C', lat: 40.6928, lon: -73.9660, distance_km: 2.4, tests: { Nitrate: 1.5, 'E. coli': 0 } }
   ];
+
+  // Load sources from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSources(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load from localStorage', e);
+    }
+  }, []);
+
+  // Save sources to localStorage whenever they change
+  useEffect(() => {
+    if (sources.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
+      } catch (e) {
+        console.warn('Failed to save to localStorage', e);
+      }
+    }
+  }, [sources]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +96,6 @@ export default function WaterQualityFrontendWrapper() {
       preferCanvas: true
     });
     
-    // Dark theme tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
       attribution: '© OpenStreetMap contributors, © CARTO',
       subdomains: 'abcd',
@@ -74,13 +104,34 @@ export default function WaterQualityFrontendWrapper() {
 
     userMarkerRef.current = L.marker([parseFloat(latInput) || 40.7128, parseFloat(lonInput) || -74.0060]).addTo(mapRef.current).bindPopup('Your location');
 
-    renderSources(demoSources);
+    mapRef.current.on('click', (e) => {
+      if (pinMode) {
+        setNewSource({ name: '', lat: e.latlng.lat, lon: e.latlng.lng, tests: {} });
+        setShowAddModal(true);
+        setPinMode(false);
+        setStatus('');
+      }
+    });
+
+    // Render existing sources if any
+    if (sources.length > 0) {
+      renderSourcesOnMap(sources);
+    } else {
+      renderSourcesOnMap(demoSources);
+      setSources(demoSources);
+    }
 
     return () => {
       try { mapRef.current && mapRef.current.remove(); } catch (e) {}
       mapRef.current = null;
     };
   }, [leafletRef.current]);
+
+  useEffect(() => {
+    if (mapRef.current && mapElRef.current) {
+      mapElRef.current.style.cursor = pinMode ? 'crosshair' : '';
+    }
+  }, [pinMode]);
 
   function parseNum(v) {
     const n = Number(v);
@@ -103,23 +154,26 @@ export default function WaterQualityFrontendWrapper() {
     return out;
   }
 
-  function renderSources(list) {
+  function renderSourcesOnMap(list) {
     const L = leafletRef.current;
     if (!mapRef.current || !L) return;
     (markersRef.current || []).forEach(m => { try { mapRef.current.removeLayer(m); } catch (e) {} });
     markersRef.current = [];
 
-    const normalized = normalizeList(list);
-    setSources(normalized);
-    setSelectedIndex(null);
-    setStatus(normalized.length ? `${normalized.length} found` : 'no sources');
-
-    for (const s of normalized) {
+    for (const s of list) {
       try {
         const m = L.marker([s.lat, s.lon]).addTo(mapRef.current).bindPopup(`<strong>${escapeHtml(s.name)}</strong><br>${(s.distance_km||0).toFixed(2)} km`);
         markersRef.current.push(m);
       } catch (e) { console.warn('marker add failed', e); }
     }
+  }
+
+  function renderSources(list) {
+    const normalized = normalizeList(list);
+    setSources(normalized);
+    setSelectedIndex(null);
+    setStatus(normalized.length ? `${normalized.length} found` : 'no sources');
+    renderSourcesOnMap(normalized);
   }
 
   function escapeHtml(str) {
@@ -152,19 +206,6 @@ export default function WaterQualityFrontendWrapper() {
     }
   }
 
-  async function fetchBackend(lat, lon) {
-    try {
-      const res = await fetch('/api/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat, lon }) });
-      if (!res.ok) throw new Error('no backend');
-      const j = await res.json();
-      const list = Array.isArray(j.clean_sources) ? j.clean_sources : [];
-      return normalizeList(list);
-    } catch (e) {
-      console.warn('backend fetch failed', e);
-      throw e;
-    }
-  }
-
   async function doSearch() {
     setStatus('searching...');
     setLoading(true);
@@ -177,13 +218,14 @@ export default function WaterQualityFrontendWrapper() {
     }
     if (mapRef.current && mapRef.current.setView) { try { mapRef.current.setView([latN, lonN], 13); } catch (e) {} }
 
-    try {
-      const backendList = await fetchBackend(latN, lonN);
-      if (backendList && backendList.length) renderSources(backendList);
-      else renderSources(demoSources);
-    } catch (e) {
-      renderSources(demoSources);
-    } finally { setLoading(false); }
+    // Recalculate distances for existing sources
+    const updatedSources = sources.map(s => ({
+      ...s,
+      distance_km: calculateDistance(latN, lonN, s.lat, s.lon)
+    }));
+    
+    renderSources(updatedSources);
+    setLoading(false);
   }
 
   function onUseLocation() {
@@ -234,184 +276,195 @@ export default function WaterQualityFrontendWrapper() {
     setStatus('');
   }
 
-  useEffect(() => { if (leafletRef.current && mapRef.current) renderSources(demoSources); }, [leafletRef.current]);
+  function onTogglePinMode() {
+    const newPinMode = !pinMode;
+    setPinMode(newPinMode);
+    setStatus(newPinMode ? '📍 Click on map to pin a source location' : '');
+  }
+
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function onAddSource() {
+    if (!newSource.name.trim()) {
+      alert('Please enter a source name');
+      return;
+    }
+    const userPos = userMarkerRef.current && userMarkerRef.current.getLatLng ? userMarkerRef.current.getLatLng() : { lat: parseFloat(latInput), lng: parseFloat(lonInput) };
+    const distance = calculateDistance(userPos.lat, userPos.lng, newSource.lat, newSource.lon);
+    const sourceToAdd = { ...newSource, distance_km: distance };
+    const updatedSources = [...sources, sourceToAdd];
+    setSources(updatedSources);
+    renderSourcesOnMap(updatedSources);
+    setShowAddModal(false);
+    setNewSource({ name: '', lat: 0, lon: 0, tests: {} });
+    setStatus(`✓ Added ${sourceToAdd.name}`);
+  }
+
+  function onDeleteSource(i) {
+    const deleted = sources[i];
+    const updated = sources.filter((_, idx) => idx !== i);
+    setSources(updated);
+    renderSourcesOnMap(updated);
+    setStatus(`Deleted ${deleted.name}`);
+  }
+
+  function onClearAll() {
+    if (confirm('Clear all sources from storage?')) {
+      setSources([]);
+      renderSourcesOnMap([]);
+      localStorage.removeItem(STORAGE_KEY);
+      setStatus('All sources cleared');
+    }
+  }
 
   return (
-    <div style={{ padding: 18, background: '#0a0a0a', minHeight: '100vh', fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ background: '#0b0b0b', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr' }}>
+    <div className="p-4 bg-zinc-950 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr]">
 
-            <aside style={{ padding: 20, borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-              <h1 style={{ margin: 0, fontSize: 18, color: '#fff' }}>Water Quality Explorer</h1>
-              <p style={{ marginTop: 6, color: '#9ca3af', fontSize: 13 }}>Enter coordinates, upload GeoJSON of sources, or use your location. Pick a source to route to it.</p>
+            <aside className="p-5 border-r border-zinc-800">
+              <h1 className="text-lg font-semibold text-white m-0">Water Quality Explorer</h1>
+              <p className="mt-1.5 text-zinc-400 text-xs">Enter coordinates, upload GeoJSON, use location, or pin sources on the map.</p>
 
-              <div style={{ marginTop: 12 }}>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af' }}>Latitude</label>
+              <div className="mt-3">
+                <label className="block text-xs text-zinc-400 mb-1.5">Latitude</label>
                 <input 
                   type="text" 
                   value={latInput} 
                   onChange={(e) => setLatInput(e.target.value)} 
-                  style={{ 
-                    width: '100%', 
-                    padding: 8, 
-                    borderRadius: 8, 
-                    border: '1px solid rgba(255,255,255,0.2)', 
-                    marginTop: 6,
-                    background: '#0a0a0a',
-                    color: '#fff'
-                  }} 
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-950 text-white text-sm focus:outline-none focus:border-zinc-500"
                 />
 
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginTop: 12 }}>Longitude</label>
+                <label className="block text-xs text-zinc-400 mb-1.5 mt-3">Longitude</label>
                 <input 
                   type="text" 
                   value={lonInput} 
                   onChange={(e) => setLonInput(e.target.value)} 
-                  style={{ 
-                    width: '100%', 
-                    padding: 8, 
-                    borderRadius: 8, 
-                    border: '1px solid rgba(255,255,255,0.2)', 
-                    marginTop: 6,
-                    background: '#0a0a0a',
-                    color: '#fff'
-                  }} 
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-950 text-white text-sm focus:outline-none focus:border-zinc-500"
                 />
 
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <div className="flex gap-2 mt-2.5">
                   <button 
-                    onClick={(e) => { e.preventDefault(); doSearch(); }} 
-                    style={{ 
-                      flex: 1, 
-                      background: '#fff', 
-                      color: '#000', 
-                      padding: '8px 10px', 
-                      borderRadius: 8,
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 600
-                    }}
+                    onClick={doSearch} 
+                    className="flex-1 bg-white text-black px-3 py-2 rounded-lg border-none cursor-pointer font-semibold text-sm hover:bg-zinc-200 transition-colors"
                   >
                     Search
                   </button>
                   <button 
-                    onClick={(e) => { e.preventDefault(); onUseLocation(); }} 
-                    style={{ 
-                      flex: 1, 
-                      background: '#0a0a0a', 
-                      border: '1px solid rgba(255,255,255,0.2)', 
-                      color: '#fff', 
-                      padding: '8px 10px', 
-                      borderRadius: 8,
-                      cursor: 'pointer'
-                    }}
+                    onClick={onUseLocation} 
+                    className="flex-1 bg-zinc-950 border border-zinc-700 text-white px-3 py-2 rounded-lg cursor-pointer text-sm hover:bg-zinc-800 transition-colors"
                   >
                     Use Location
                   </button>
                 </div>
               </div>
 
-              <div style={{ marginTop: 12 }}>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af' }}>Upload GeoJSON (optional)</label>
+              <div className="mt-3">
+                <label className="block text-xs text-zinc-400 mb-1.5">Upload GeoJSON (optional)</label>
                 <input 
                   type="file" 
                   accept="application/geo+json,application/json" 
                   onChange={(e) => handleGeoJSONFile(e.target.files?.[0])} 
-                  style={{ 
-                    width: '100%', 
-                    marginTop: 6,
-                    color: '#9ca3af',
-                    fontSize: 12
-                  }} 
+                  className="w-full text-zinc-400 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 file:cursor-pointer"
                 />
               </div>
 
-              <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                <strong style={{ fontSize: 12, color: '#fff' }}>Clean sources</strong>
-                <div style={{ marginLeft: 'auto', fontSize: 12, color: '#9ca3af' }}>{status}</div>
+              <div className="mt-3 flex gap-2 items-center">
+                <strong className="text-xs text-white">Clean sources</strong>
+                <button 
+                  onClick={onTogglePinMode} 
+                  className={`ml-auto px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors ${
+                    pinMode 
+                      ? 'bg-white text-black' 
+                      : 'bg-zinc-950 border border-zinc-700 text-white hover:bg-zinc-800'
+                  }`}
+                >
+                  {pinMode ? '📍 Pin Active' : '+ Pin Source'}
+                </button>
               </div>
+              <div className="text-xs text-zinc-400 mt-1 min-h-4">{status}</div>
 
-              <div style={{ marginTop: 8, maxHeight: '38vh', overflow: 'auto' }}>
-                {loading && <div style={{ color: '#9ca3af' }}>Loading...</div>}
-                {!loading && (!sources || sources.length === 0) && <div style={{ color: '#9ca3af' }}>No sources yet — search or upload GeoJSON.</div>}
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <div className="mt-2 max-h-[35vh] overflow-auto">
+                {loading && <div className="text-zinc-400 text-sm">Loading...</div>}
+                {!loading && sources.length === 0 && <div className="text-zinc-400 text-sm">No sources yet — search, upload GeoJSON, or pin on map.</div>}
+                <ul className="list-none p-0 m-0">
                   {sources.map((s, i) => (
-                    <li key={i} style={{ marginBottom: 8 }}>
-                      <div style={{ 
-                        padding: 10, 
-                        borderRadius: 8, 
-                        background: selectedIndex === i ? 'rgba(255,255,255,0.15)' : '#0a0a0a', 
-                        border: `1px solid ${selectedIndex === i ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'}`, 
-                        display: 'flex', 
-                        justifyContent: 'space-between' 
-                      }}>
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#fff' }}>{s.name}</div>
-                          <div style={{ fontSize: 12, color: '#9ca3af' }}>{s.lat.toFixed(5)}, {s.lon.toFixed(5)}</div>
+                    <li key={i} className="mb-2">
+                      <div className={`p-2.5 rounded-lg flex justify-between ${
+                        selectedIndex === i 
+                          ? 'bg-white/15 border border-white/40' 
+                          : 'bg-zinc-950 border border-zinc-700'
+                      }`}>
+                        <div className="flex-1">
+                          <div className="font-semibold text-white text-sm">{s.name}</div>
+                          <div className="text-xs text-zinc-400">{s.lat.toFixed(5)}, {s.lon.toFixed(5)}</div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 12, color: '#9ca3af' }}>{(s.distance_km || 0).toFixed(2)} km</div>
-                          <button 
-                            onClick={() => onSelectSource(i)} 
-                            style={{ 
-                              marginTop: 8, 
-                              padding: '6px 12px', 
-                              borderRadius: 6, 
-                              background: '#fff', 
-                              border: 'none',
-                              color: '#000',
-                              cursor: 'pointer',
-                              fontSize: 12,
-                              fontWeight: 600
-                            }}
-                          >
-                            Route
-                          </button>
+                        <div className="text-right flex flex-col gap-1">
+                          <div className="text-xs text-zinc-400">{(s.distance_km || 0).toFixed(2)} km</div>
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => onSelectSource(i)} 
+                              className="px-3 py-1.5 rounded-md bg-white border-none text-black cursor-pointer text-xs font-semibold hover:bg-zinc-200 transition-colors"
+                            >
+                              Route
+                            </button>
+                            <button 
+                              onClick={() => onDeleteSource(i)} 
+                              className="px-2 py-1.5 rounded-md bg-zinc-950 border border-zinc-700 text-red-400 cursor-pointer text-xs hover:bg-zinc-800 hover:text-red-300 transition-colors"
+                              title="Delete source"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div style={{ marginTop: 6, fontSize: 12, color: '#9ca3af' }}>
-                        {Object.entries(s.tests || {}).slice(0,3).map(([k,v]) => (<span key={String(k)} style={{ marginRight: 8 }}>{k}: {String(v)}</span>))}
+                      <div className="mt-1.5 text-xs text-zinc-400">
+                        {Object.entries(s.tests || {}).slice(0,3).map(([k,v]) => (
+                          <span key={String(k)} className="mr-2">{k}: {String(v)}</span>
+                        ))}
                       </div>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div style={{ marginTop: 12, fontSize: 11, color: '#6b7280' }}>
-                Notes: uses public OSRM for routing. For production, provide your own routing service.
+              {sources.length > 0 && (
+                <button 
+                  onClick={onClearAll}
+                  className="w-full mt-3 px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-400 cursor-pointer text-xs hover:bg-zinc-800 hover:text-red-400 transition-colors"
+                >
+                  Clear All Sources
+                </button>
+              )}
+
+              <div className="mt-3 text-[11px] text-zinc-500">
+                Notes: Data persists in browser localStorage. Uses public OSRM for routing.
               </div>
             </aside>
 
-            <main style={{ position: 'relative' }}>
-              <div ref={mapElRef} style={{ height: '72vh', width: '100%' }} />
+            <main className="relative">
+              <div ref={mapElRef} className="h-[72vh] w-full" />
 
-              <div style={{ position: 'absolute', right: 16, top: 16, zIndex: 400 }}>
+              <div className="absolute right-4 top-4 z-[400] flex gap-2">
                 <button 
-                  onClick={() => onFit()} 
-                  style={{ 
-                    marginRight: 8, 
-                    padding: '8px 12px', 
-                    borderRadius: 8, 
-                    background: '#fff', 
-                    border: 'none',
-                    color: '#000',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
+                  onClick={onFit} 
+                  className="px-3 py-2 rounded-lg bg-white border-none text-black cursor-pointer font-semibold text-sm hover:bg-zinc-200 transition-colors shadow-lg"
                 >
                   Fit
                 </button>
                 <button 
-                  onClick={() => onClearRoute()} 
-                  style={{ 
-                    padding: '8px 12px', 
-                    borderRadius: 8, 
-                    background: '#0a0a0a', 
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    color: '#fff',
-                    cursor: 'pointer'
-                  }}
+                  onClick={onClearRoute} 
+                  className="px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-white cursor-pointer text-sm hover:bg-zinc-800 transition-colors shadow-lg"
                 >
                   Clear Route
                 </button>
@@ -420,10 +473,73 @@ export default function WaterQualityFrontendWrapper() {
 
           </div>
         </div>
-        <div style={{ textAlign: 'center', padding: 12, color: '#6b7280', fontSize: 12 }}>
-          Water Quality Explorer • Demo UI — expose POST /api/check for live data
+        <div className="text-center py-3 text-zinc-500 text-xs">
+          Water Quality Explorer • Data stored locally in browser
         </div>
       </div>
+
+      {/* Add Source Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[9999]">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-[90%] max-w-md shadow-2xl">
+            <h2 className="text-lg font-semibold text-white m-0">Add Clean Water Source</h2>
+            <p className="mt-1.5 text-zinc-400 text-sm">
+              📍 Location: {newSource.lat.toFixed(5)}, {newSource.lon.toFixed(5)}
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-xs text-zinc-400 mb-1.5">Source Name *</label>
+              <input 
+                type="text" 
+                value={newSource.name} 
+                onChange={(e) => setNewSource({ ...newSource, name: e.target.value })} 
+                placeholder="e.g. Community Well B"
+                autoFocus
+                className="w-full px-3 py-2.5 rounded-lg border border-zinc-700 bg-zinc-950 text-white text-sm focus:outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-xs text-zinc-400 mb-1">Water Quality Test Results (optional)</label>
+              <div className="text-[11px] text-zinc-500 mb-1.5">
+                Enter test results as key-value pairs, one per line
+              </div>
+              <textarea 
+                placeholder="Nitrate: 2.5&#10;Lead: 0&#10;E. coli: 0&#10;pH: 7.2"
+                onChange={(e) => {
+                  const lines = e.target.value.split('\n');
+                  const tests = {};
+                  lines.forEach(line => {
+                    const [key, val] = line.split(':').map(s => s.trim());
+                    if (key && val) tests[key] = isNaN(Number(val)) ? val : Number(val);
+                  });
+                  setNewSource({ ...newSource, tests });
+                }}
+                className="w-full px-3 py-2.5 rounded-lg border border-zinc-700 bg-zinc-950 text-white min-h-[100px] font-mono text-xs resize-y focus:outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div className="mt-5 flex gap-2.5">
+              <button 
+                onClick={onAddSource} 
+                className="flex-1 bg-white text-black px-4 py-3 rounded-lg border-none cursor-pointer font-semibold text-sm hover:bg-zinc-200 transition-colors"
+              >
+                Add Source
+              </button>
+              <button 
+                onClick={() => { 
+                  setShowAddModal(false); 
+                  setNewSource({ name: '', lat: 0, lon: 0, tests: {} }); 
+                  setStatus('');
+                }} 
+                className="flex-1 bg-zinc-950 border border-zinc-700 text-white px-4 py-3 rounded-lg cursor-pointer text-sm hover:bg-zinc-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
