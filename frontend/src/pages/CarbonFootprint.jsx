@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Leaf, Car, Home, Plane, ShoppingBag, Lightbulb, TrendingDown, 
+import {
+  Leaf, Car, Home, Plane, ShoppingBag, Lightbulb, TrendingDown,
   Sparkles, Trash2, Coffee, Utensils, Zap, Droplet, Recycle,
   Wind, Train, Bike, Package, Smartphone, Tv, AlertCircle, Target
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const CarbonFootprintTracker = () => {
   const analyzeWithAI = (activityText) => {
     const text = activityText.toLowerCase();
     let matched = false;
-    
+
     // Transportation patterns - Driving
     if ((text.includes('drive') || text.includes('drove') || text.includes('car')) && !matched) {
       const distance = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 50;
@@ -59,12 +59,12 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Transportation - Flights
     if ((text.includes('flight') || text.includes('fly') || text.includes('flew') || text.includes('plane')) && !matched) {
       let emissions = 250;
       let flightType = 'flight';
-      
+
       if (text.includes('international') || text.includes('long')) {
         emissions = 1200;
         flightType = 'international flight';
@@ -72,7 +72,7 @@ const CarbonFootprintTracker = () => {
         emissions = 250;
         flightType = 'domestic flight';
       }
-      
+
       matched = true;
       return {
         category: 'transportation',
@@ -87,7 +87,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Transportation - Public Transit
     if ((text.includes('bus') || text.includes('train') || text.includes('metro') || text.includes('subway') || text.includes('transit')) && !matched) {
       const distance = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 20;
@@ -104,7 +104,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Transportation - Bike
     if ((text.includes('bike') || text.includes('biked') || text.includes('bicycle') || text.includes('cycling')) && !matched) {
       matched = true;
@@ -120,7 +120,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Transportation - Taxi/Uber
     if ((text.includes('taxi') || text.includes('uber') || text.includes('lyft') || text.includes('cab')) && !matched) {
       const distance = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 15;
@@ -137,7 +137,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Energy - Electricity
     if ((text.includes('electricity') || text.includes('power') || text.includes('kwh')) && !matched) {
       const kwh = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 100;
@@ -155,7 +155,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Energy - Heating/Cooling
     if ((text.includes('heating') || text.includes('cooling') || text.includes('ac') || text.includes('air condition') || text.includes('hvac')) && !matched) {
       const hours = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 8;
@@ -173,7 +173,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Energy - Gas/Natural Gas
     if ((text.includes('gas') || text.includes('natural gas') || text.includes('heating gas')) && !matched) {
       const amount = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 50;
@@ -191,7 +191,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Food - Beef
     if ((text.includes('beef') || text.includes('steak') || text.includes('burger') || text.includes('red meat')) && !matched) {
       const servings = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 1;
@@ -209,7 +209,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Food - Chicken/Poultry
     if ((text.includes('chicken') || text.includes('poultry') || text.includes('turkey')) && !matched) {
       const servings = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 1;
@@ -227,7 +227,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Food - Dairy
     if ((text.includes('dairy') || text.includes('milk') || text.includes('cheese') || text.includes('yogurt')) && !matched) {
       const amount = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 1;
@@ -245,7 +245,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Food - Vegetarian/Vegan
     if ((text.includes('vegetarian') || text.includes('vegan') || text.includes('plant') || text.includes('salad')) && !matched) {
       const servings = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 1;
@@ -263,7 +263,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Food - Restaurant/Takeout
     if ((text.includes('restaurant') || text.includes('takeout') || text.includes('food delivery')) && !matched) {
       matched = true;
@@ -280,17 +280,17 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Consumption - Shopping/General
     if ((text.includes('shopping') || text.includes('bought') || text.includes('purchase')) && !matched) {
       let emissions = 15;
       let itemType = 'item';
-      
+
       if (text.includes('clothes') || text.includes('clothing') || text.includes('fashion')) {
         emissions = 20;
         itemType = 'clothing item';
       }
-      
+
       matched = true;
       return {
         category: 'consumption',
@@ -305,7 +305,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Consumption - Electronics
     if ((text.includes('phone') || text.includes('laptop') || text.includes('computer') || text.includes('tablet') || text.includes('electronic')) && !matched) {
       matched = true;
@@ -322,7 +322,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Consumption - Streaming/Internet
     if ((text.includes('stream') || text.includes('netflix') || text.includes('youtube') || text.includes('video')) && !matched) {
       const hours = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 2;
@@ -340,7 +340,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Consumption - Package Delivery
     if ((text.includes('package') || text.includes('delivery') || text.includes('amazon') || text.includes('shipping')) && !matched) {
       matched = true;
@@ -357,7 +357,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Waste - General Waste
     if ((text.includes('waste') || text.includes('trash') || text.includes('garbage')) && !matched) {
       const amount = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 5;
@@ -375,7 +375,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Waste - Recycling
     if ((text.includes('recycle') || text.includes('recycled')) && !matched) {
       const amount = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 5;
@@ -393,7 +393,7 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Water Usage
     if ((text.includes('water') || text.includes('shower') || text.includes('bath')) && !matched) {
       const minutes = parseFloat(text.match(/\d+\.?\d*/)?.[0]) || 10;
@@ -411,13 +411,13 @@ const CarbonFootprintTracker = () => {
         ]
       };
     }
-    
+
     // Fallback logic - Advanced NLP-style analysis
     if (!matched) {
       // Try to extract numbers for generic estimation
       const numbers = text.match(/\d+\.?\d*/g);
       const hasNumber = numbers && numbers.length > 0;
-      
+
       // Keywords for category detection
       if (text.includes('km') || text.includes('mile') || text.includes('travel')) {
         const distance = hasNumber ? parseFloat(numbers[0]) : 30;
@@ -434,7 +434,7 @@ const CarbonFootprintTracker = () => {
           ]
         };
       }
-      
+
       if (text.includes('energy') || text.includes('electric') || text.includes('power')) {
         const amount = hasNumber ? parseFloat(numbers[0]) : 50;
         return {
@@ -450,7 +450,7 @@ const CarbonFootprintTracker = () => {
           ]
         };
       }
-      
+
       if (text.includes('food') || text.includes('eat') || text.includes('meal')) {
         return {
           category: 'food',
@@ -466,7 +466,7 @@ const CarbonFootprintTracker = () => {
           ]
         };
       }
-      
+
       if (text.includes('buy') || text.includes('purchase') || text.includes('shop')) {
         return {
           category: 'consumption',
@@ -482,7 +482,7 @@ const CarbonFootprintTracker = () => {
           ]
         };
       }
-      
+
       // Ultimate fallback - general estimate
       return {
         category: 'other',
@@ -502,7 +502,7 @@ const CarbonFootprintTracker = () => {
 
   const handleAddActivity = () => {
     if (!input.trim()) return;
-    
+
     const analysis = analyzeWithAI(input);
     const newActivity = {
       id: Date.now(),
@@ -510,12 +510,12 @@ const CarbonFootprintTracker = () => {
       timestamp: new Date().toISOString(),
       displayTime: new Date().toLocaleString()
     };
-    
+
     setActivities([newActivity, ...activities]);
     setAiSuggestion(analysis.suggestions[Math.floor(Math.random() * analysis.suggestions.length)]);
     setShowSuggestion(true);
     setInput('');
-    
+
     setTimeout(() => setShowSuggestion(false), 6000);
   };
 
@@ -525,7 +525,7 @@ const CarbonFootprintTracker = () => {
   };
 
   const totalEmissions = activities.reduce((sum, activity) => sum + activity.emissions, 0);
-  
+
   // Calculate category breakdown
   const categoryTotals = activities.reduce((acc, activity) => {
     acc[activity.category] = (acc[activity.category] || 0) + activity.emissions;
@@ -539,8 +539,8 @@ const CarbonFootprintTracker = () => {
   })).sort((a, b) => b.emissions - a.emissions);
 
   // Calculate daily/monthly/yearly projections
-  const oldestActivity = activities.length > 0 
-    ? new Date(activities[activities.length - 1].timestamp) 
+  const oldestActivity = activities.length > 0
+    ? new Date(activities[activities.length - 1].timestamp)
     : new Date();
   const daysSinceStart = Math.max(1, Math.ceil((new Date() - oldestActivity) / (1000 * 60 * 60 * 24)));
   const dailyAverage = totalEmissions / daysSinceStart;
@@ -548,9 +548,9 @@ const CarbonFootprintTracker = () => {
   const yearlyProjection = dailyAverage * 365;
 
   const getIcon = (iconName) => {
-    const icons = { 
-      Car, Home, Plane, ShoppingBag, Lightbulb, Leaf, Train, Bike, 
-      Utensils, Zap, Droplet, Trash2, Recycle, Coffee, Package, Smartphone, Tv 
+    const icons = {
+      Car, Home, Plane, ShoppingBag, Lightbulb, Leaf, Train, Bike,
+      Utensils, Zap, Droplet, Trash2, Recycle, Coffee, Package, Smartphone, Tv
     };
     const Icon = icons[iconName] || Leaf;
     return <Icon size={20} />;
@@ -581,7 +581,7 @@ const CarbonFootprintTracker = () => {
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ backgroundColor: '#0a0a0a' }}>
       <div className="max-w-[1800px] mx-auto">
-        
+
         {/* Header */}
         <div className="rounded-2xl shadow-xl p-6 md:p-8 mb-6 border" style={{ backgroundColor: '#0b0b0b', borderColor: 'rgba(255, 255, 255, 0.2)' }}>
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -606,10 +606,10 @@ const CarbonFootprintTracker = () => {
 
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-          
+
           {/* Left Column - Statistics & Input (2/3 width on xl screens) */}
           <div className="xl:col-span-2 space-y-6">
-            
+
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-green-500/10 rounded-xl p-5 border border-green-500/20">
@@ -617,19 +617,19 @@ const CarbonFootprintTracker = () => {
                 <p className="text-3xl font-bold text-green-400">{totalEmissions.toFixed(1)}</p>
                 <p className="text-xs text-gray-500 mt-1">kg CO₂e</p>
               </div>
-              
+
               <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20">
                 <p className="text-xs text-gray-400 mb-1">Daily Average</p>
                 <p className="text-3xl font-bold text-blue-400">{dailyAverage.toFixed(1)}</p>
                 <p className="text-xs text-gray-500 mt-1">kg CO₂e/day</p>
               </div>
-              
+
               <div className="bg-purple-500/10 rounded-xl p-5 border border-purple-500/20">
                 <p className="text-xs text-gray-400 mb-1">Activities</p>
                 <p className="text-3xl font-bold text-purple-400">{activities.length}</p>
                 <p className="text-xs text-gray-500 mt-1">entries logged</p>
               </div>
-              
+
               <div className={`${impact.color === 'text-green-400' ? 'bg-green-500/10 border-green-500/20' : impact.color === 'text-yellow-400' ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-red-500/10 border-red-500/20'} rounded-xl p-5 border`}>
                 <p className="text-xs text-gray-400 mb-1">Impact Level</p>
                 <p className={`text-3xl font-bold ${impact.color}`}>{impact.level}</p>
@@ -659,8 +659,8 @@ const CarbonFootprintTracker = () => {
                     <p className="text-sm text-gray-400">Climate Target</p>
                     <p className="text-2xl font-bold text-green-400">2,000 kg</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {yearlyProjection > 2000 
-                        ? `${((yearlyProjection - 2000) / yearlyProjection * 100).toFixed(0)}% above target` 
+                      {yearlyProjection > 2000
+                        ? `${((yearlyProjection - 2000) / yearlyProjection * 100).toFixed(0)}% above target`
                         : `${((2000 - yearlyProjection) / 2000 * 100).toFixed(0)}% below target`}
                     </p>
                   </div>
@@ -715,7 +715,7 @@ const CarbonFootprintTracker = () => {
                   <span className="text-sm text-gray-500 font-normal">(Showing last 10)</span>
                 )}
               </h2>
-              
+
               {activities.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Leaf size={48} className="mx-auto mb-4 opacity-30" />
@@ -761,7 +761,7 @@ const CarbonFootprintTracker = () => {
 
           {/* Right Column - Visualizations (1/3 width on xl screens) */}
           <div className="space-y-6">
-            
+
             {/* Category Breakdown */}
             {categoryData.length > 0 && (
               <div className="rounded-2xl shadow-xl p-6 border" style={{ backgroundColor: '#0b0b0b', borderColor: 'rgba(255, 255, 255, 0.2)' }}>
@@ -780,7 +780,7 @@ const CarbonFootprintTracker = () => {
                           </span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full ${colors.bg} ${colors.text} transition-all duration-500 flex items-center justify-end pr-2`}
                             style={{ width: `${percentage}%` }}
                           >
