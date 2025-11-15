@@ -21,6 +21,7 @@ import docsRoutes from "./routes/docs.js";
 import morgan from "morgan";
 import authRoutes from "./routes/auth.js";
 import farmRoutes from "./routes/farm.js";
+import waterRoutes from "./routes/water.js";
 
 
 
@@ -37,6 +38,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/docs", docsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/farm", farmRoutes);
+app.use("/api/water", waterRoutes);
 
 app.use(errorHandler);
 

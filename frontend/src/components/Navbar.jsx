@@ -13,7 +13,7 @@ const Navbar = () => {
 
         {/* Desktop Navlinks */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          <a href="/">Home</a>
+          <a href="/dashboard">Home</a>
           <a href="/carepage">Self Care</a>
           <a href="/carbonfootprint">Carbon Footprint</a>
           <a href="/watermap">Water Map</a>

@@ -1,6 +1,4 @@
 import { create } from "zustand";
-import { getQuestions } from "../../../backend/controllers/careController";
-import { addWaterSource } from "../../../backend/controllers/waterController";
 
 const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -26,7 +24,6 @@ export const useAuthStore = create((set, get) => ({
                 body: JSON.stringify({ email, password }),
             });
 
-            // 👇 Important: DO NOT throw — handle 400 silently
             const data = await res.json();
             data.ok = res.ok;
 
@@ -50,7 +47,6 @@ export const useAuthStore = create((set, get) => ({
             set({ loading: false });
         }
     },
-
 
     // --------------------------
     // SIGNUP
@@ -85,7 +81,7 @@ export const useAuthStore = create((set, get) => ({
     logout: () => {
         localStorage.removeItem("authToken");
         set({ user: null, token: null });
-        window.location.href = "/login"; // correct client-side redirect
+        window.location.href = "/login";
     },
 
     // --------------------------
@@ -126,7 +122,7 @@ export const useAuthStore = create((set, get) => ({
     },
 
     // --------------------------
-    // UPDATE PROFILE (if needed)
+    // UPDATE PROFILE
     // --------------------------
     updateProfile: async (updates) => {
         const { token } = get();
@@ -149,7 +145,6 @@ export const useAuthStore = create((set, get) => ({
                 return { ok: false, error: data.error };
             }
 
-            // update local state + token
             localStorage.setItem("authToken", data.token);
             set({
                 user: {
@@ -167,6 +162,9 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
+    // --------------------------
+    // CARE FUNCTIONS
+    // --------------------------
     getQuestions: async () => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/care/questions`, {
@@ -185,6 +183,7 @@ export const useAuthStore = create((set, get) => ({
             throw error;
         }
     },
+
     submitAnswers: async (QAs, capturedImage) => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/care/submit-answers`, {
@@ -193,7 +192,7 @@ export const useAuthStore = create((set, get) => ({
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    QAs: QAs,  // Send as array, not stringified
+                    QAs: QAs,
                     image: capturedImage || null,
                 }),
             });
@@ -208,6 +207,9 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
+    // --------------------------
+    // WATER SOURCE FUNCTIONS (UPDATED)
+    // --------------------------
     addWaterSource: async (sourceData) => {
         const { token } = get();
         set({ loading: true, error: null });
@@ -232,11 +234,18 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    getWaterSources: async () => {
+    getWaterSources: async (lat, lon, radius = 50) => {
         const { token } = get();
         set({ loading: true, error: null });
         try {
-            const res = await fetch(`${BACKEND_URL}/api/water/sources`, {
+            let url = `${BACKEND_URL}/api/water/sources`;
+            
+            // Add query parameters if coordinates provided
+            if (lat && lon) {
+                url += `?lat=${lat}&lon=${lon}&radius=${radius}`;
+            }
+
+            const res = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -255,4 +264,50 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
+    deleteWaterSource: async (id) => {
+        const { token } = get();
+        set({ loading: true, error: null });
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/water/sources/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const data = await res.json();
+            set({ loading: false });
+            if (!res.ok) {
+                return { ok: false, error: data.message || "Failed to delete water source" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            set({ loading: false, error: err.message });
+            return { ok: false, error: err.message };
+        }
+    },
+
+    updateWaterSource: async (id, updates) => {
+        const { token } = get();
+        set({ loading: true, error: null });
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/water/sources/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(updates),
+            });
+            const data = await res.json();
+            set({ loading: false });
+            if (!res.ok) {
+                return { ok: false, error: data.message || "Failed to update water source" };
+            }
+            return { ok: true, data };
+        } catch (err) {
+            set({ loading: false, error: err.message });
+            return { ok: false, error: err.message };
+        }
+    },
 }));
