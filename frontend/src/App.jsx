@@ -8,7 +8,7 @@ import CarePage from './pages/CarePage';
 import { useAuthStore } from './store/useAuthStore';
 import { Toaster } from 'react-hot-toast';
 import CarbonFootprintTracker from './pages/CarbonFootprint';
-import ProtectedRoute from './components/ProtectedRoutes';
+import ProtectedRoute from './components/auth/ProtectedRoutes';
 
 
 
@@ -41,21 +41,9 @@ const App = () => {
                 <Route path="/" element={user ? <Dashboard/> : <LoginPage/>} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                    } />
-                <Route path="/carepage" element={
-                  <ProtectedRoute>
-                    <CarePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/carbonfootprint" element={
-                  <ProtectedRoute>
-                    <CarbonFootprintTracker />
-                  </ProtectedRoute>
-                } />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/carepage" element={<CarePage />} />
+                <Route path="/carbonfootprint" element={<CarbonFootprintTracker />} />
             </Routes>
     </div>
   );

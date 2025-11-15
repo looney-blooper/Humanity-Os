@@ -104,22 +104,21 @@ export const useAuthStore = create((set, get) => ({
             });
 
             const data = await res.json();
-
             if (!res.ok) {
-                set({ user: null, token: null, isCheckingAuth: false });
+                set({isCheckingAuth: false });
                 localStorage.removeItem("authToken");
                 return { ok: false };
             }
 
             set({
-                user: data, // backend returns user object directly
-                token,
+                user: data, 
+                token: token,
                 isCheckingAuth: false,
             });
 
             return { ok: true, user: data };
         } catch (err) {
-            set({ user: null, token: null});
+            set({ token: null});
         } finally{
             set({ isCheckingAuth: false });
         }
