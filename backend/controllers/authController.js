@@ -84,26 +84,46 @@ export const updateProfile = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const { name, email, password } = req.body;
+    const {
+      name,
+      phone,
+      age,
+      bio,
+      preferences,
+      metrics,
+      location
+    } = req.body;
 
-    // name update
     if (name) user.name = name;
 
-    // email update with check
-    if (email && email !== user.email) {
-      const existing = await User.findOne({ email });
-      if (existing)
-        return res.status(400).json({
-          error: { email: "Email is already in use" },
-        });
+    if (phone) user.phone = phone;
 
-      user.email = email;
+    if (age !== undefined) user.age = age;
+
+    if (bio) user.bio = bio;
+
+    if (preferences && typeof preferences === "object") {
+      user.preferences = {
+        ...user.preferences,
+        ...preferences
+      };
     }
 
-    // password update
-    if (password) {
-      user.password = await bcrypt.hash(password, 10);
+    if (metrics && typeof metrics === "object") {
+      user.metrics = {
+        ...user.metrics,
+        ...metrics
+      };
     }
+
+    if (location && Array.isArray(location.coordinates)) {
+      user.location = {
+        type: "Point",
+        coordinates: location.coordinates,
+      };
+    }
+
+    user.lastActive = Date.now();
 
     const updatedUser = await user.save();
 
@@ -111,9 +131,21 @@ export const updateProfile = async (req, res) => {
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
-      token: generateToken(updatedUser._id), // new token
+      phone: updatedUser.phone,
+      age: updatedUser.age,
+      bio: updatedUser.bio,
+      role: updatedUser.role,
+      preferences: updatedUser.preferences,
+      metrics: updatedUser.metrics,
+      location: updatedUser.location,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
     });
+
   } catch (error) {
-    return res.status(500).json({ error: "Profile update failed" });
+    console.error(error);
+    res.status(500).json({ error: "Profile update failed" });
   }
 };
+
+
