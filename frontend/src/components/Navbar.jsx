@@ -8,10 +8,8 @@ const Navbar = () => {
     <div className="h-[60px] w-full px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 border-b border-white/10 flex items-center text-white">
       <div className="w-full flex items-center justify-between">
         
-        {/* Logo */}
         <h1 className="text-xl font-semibold">Humanity OS</h1>
 
-        {/* Desktop Navlinks */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
           <a href="/dashboard">Home</a>
           <a href="/carepage">Self Care</a>
